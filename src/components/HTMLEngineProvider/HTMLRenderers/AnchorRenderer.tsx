@@ -10,7 +10,10 @@ import useEnvironment from '@hooks/useEnvironment';
 import useThemeStyles from '@hooks/useThemeStyles';
 import {getInternalExpensifyPath, getInternalNewExpensifyPath, openLink} from '@libs/actions/Link';
 import tryResolveUrlFromApiRoot from '@libs/tryResolveUrlFromApiRoot';
+import {isNavatticTourURL} from '@libs/TourUtils';
 import CONST from '@src/CONST';
+import {setSelfTourViewed} from '@libs/actions/Welcome';
+import {isAnonymousUser} from '@libs/actions/Session';
 
 type AnchorRendererProps = CustomRendererProps<TBlock> & {
     /** Key of the element */
@@ -34,6 +37,7 @@ function AnchorRenderer({tnode, style, key}: AnchorRendererProps) {
 
     const isDeleted = HTMLEngineUtils.isDeletedNode(tnode);
     const isChildOfTaskTitle = HTMLEngineUtils.isChildOfTaskTitle(tnode);
+    const isTourLink = isNavatticTourURL(attrHref);
 
     const textDecorationLineStyle = isDeleted ? styles.underlineLineThrough : {};
 
@@ -44,7 +48,12 @@ function AnchorRenderer({tnode, style, key}: AnchorRendererProps) {
         return (
             <Text
                 style={styles.link}
-                onPress={() => openLink(attrHref, environmentURL, isAttachment)}
+                onPress={() => {
+                    if (isTourLink) {
+                        setSelfTourViewed(isAnonymousUser());
+                    }
+                    openLink(attr, environmentURL, isAttachment);
+                }}
                 suppressHighlighting
             >
                 <TNodeChildrenRenderer tnode={tnode} />
@@ -74,8 +83,13 @@ function AnchorRenderer({tnode, style, key}: AnchorRendererProps) {
             rel={htmlAttribs.rel || 'noopener noreferrer'}
             style={[style, parentStyle, textDecorationLineStyle, styles.textUnderlinePositionUnder, styles.textDecorationSkipInkNone, isChildOfTaskTitle && styles.taskTitleMenuItem]}
             key={key}
-            // Only pass the press handler for internal links. For public links or whitelisted internal links fallback to default link handling
-            onPress={internalNewExpensifyPath || internalExpensifyPath ? () => openLink(attrHref, environmentURL, isAttachment) : undefined}
+            // Only pass the press handler for internal links or Navattic tour URLs. For other public links fallback to default link handling
+            onPress={internalNewExpensifyPath || internalExpensifyPath || isTourLink ? () => {
+                if (isTourLink) {
+                    setSelfTourViewed(isAnonymousUser());
+                }
+                openLink(actualHref, environmentURL, isAttachment);
+            } : undefined}
             linkHasImage={linkHasImage}
         >
             <TNodeChildrenRenderer

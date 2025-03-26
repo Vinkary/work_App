@@ -8,7 +8,15 @@ function getNavatticURL(environment: ValueOf<typeof CONST.ENVIRONMENT>, introSel
     return introSelected === CONST.SELECTABLE_ONBOARDING_CHOICES.MANAGE_TEAM ? adminTourURL : employeeTourURL;
 }
 
+/**
+ * Checks if a given URL is a Navattic tour URL
+ */
+function isNavatticTourURL(url: string): boolean {
+    return Object.values(CONST.NAVATTIC).includes(url as any);
+}
+
 export {
     // eslint-disable-next-line import/prefer-default-export
     getNavatticURL,
+    isNavatticTourURL,
 };
